@@ -36,7 +36,7 @@ struct ContentView: View {
 
             Color.gray
                 .tabItem {
-                    Image(systemName: "trash.fill")
+                    Image(systemName: "arrow.triangle.2.circlepath")
                     Text("Waste Reduction")
                 }
                 .tag(3)
