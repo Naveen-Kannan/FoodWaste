@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import PythonKit
 
 struct ContentView: View {
     @State private var selectedTab = 0
