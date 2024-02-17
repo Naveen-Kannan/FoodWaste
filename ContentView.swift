@@ -53,46 +53,42 @@ struct ContentView: View {
         GeometryReader { geometry in
             VStack {
                 Spacer().frame(height: geometry.size.height * 0.05)
-                HStack {
-                    Spacer()
-                    VStack {
-                        CameraView(image: $image, isCameraActive: $isCameraActive)
-                            .frame(width: geometry.size.width * 0.90, height: geometry.size.height * 0.60)
-                            .cornerRadius(10)
-                        Button("Library") {
-                            showingPhotoLibrary = true
-                        }
-                        .padding()
-                        .background(Color.orange)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                        .sheet(isPresented: $showingPhotoLibrary) {
-                            PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
-                        }
-                        Button("Add Food Item") {
-                            showingAddItemSheet = true
-                        }
-                        .padding()
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                        .sheet(isPresented: $showingAddItemSheet) {
-                            AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems)
-                        }
-                        Button(action: {
-                            isCameraActive.toggle()
-                        }) {
-                            Image(systemName: "camera")
-                                .font(.largeTitle)
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .clipShape(Circle())
-                        }
-                        .padding(.top, 10)
+                ZStack(alignment: .bottomTrailing) {
+                    CameraView(image: $image, isCameraActive: $isCameraActive, pastPhotos: $pastPhotos)
+                        .frame(width: geometry.size.width * 0.90, height: geometry.size.height * 0.60)
+                        .cornerRadius(10)
+                    Button("Library") {
+                        showingPhotoLibrary = true
                     }
-                    Spacer()
+                    .padding()
+                    .background(Color.black.opacity(0.5))
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                    .sheet(isPresented: $showingPhotoLibrary) {
+                        PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
+                    }
                 }
+                Button("Add Food Item") {
+                    showingAddItemSheet = true
+                }
+                .padding()
+                .background(Color.green)
+                .foregroundColor(.white)
+                .cornerRadius(8)
+                .sheet(isPresented: $showingAddItemSheet) {
+                    AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems)
+                }
+                Button(action: {
+                    isCameraActive.toggle()
+                }) {
+                    Image(systemName: "camera")
+                        .font(.largeTitle)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .clipShape(Circle())
+                }
+                .padding(.top, 10)
                 Spacer() // Add a spacer to fill the remaining space
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -193,11 +189,14 @@ struct PhotoLibrarySheet: View {
 struct CameraView: UIViewControllerRepresentable {
     @Binding var image: Image?
     @Binding var isCameraActive: Bool
+    @Binding var pastPhotos: [Image]
     
     func makeUIViewController(context: Context) -> UIViewController {
         let viewController = CameraViewController()
         viewController.imageHandler = { uiImage in
-            self.image = Image(uiImage: uiImage)
+            let newImage = Image(uiImage: uiImage)
+            self.image = newImage
+            self.pastPhotos.append(newImage)
         }
         return viewController
     }
