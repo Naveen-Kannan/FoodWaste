@@ -1,13 +1,14 @@
 import SwiftUI
+import AVFoundation
 
 struct ContentView: View {
     @State private var selectedTab = 0
-    @State private var isCameraPresented = false
     @State private var image: Image? = nil
     @State private var foodItems: [FoodItem] = []
-    @State private var newItemName: String = ""
-    @State private var newItemDate: String = ""
-    @State private var newItemExpirationDate: String = ""
+    @State private var showingAddItemSheet = false
+    @State private var showingPhotoLibrary = false
+    @State private var isCameraActive = false
+    @State private var pastPhotos: [Image] = []
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -55,13 +56,31 @@ struct ContentView: View {
                 HStack {
                     Spacer()
                     VStack {
-                        image?
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width * 0.90, height: geometry.size.height * 0.80)
+                        CameraView(image: $image, isCameraActive: $isCameraActive)
+                            .frame(width: geometry.size.width * 0.90, height: geometry.size.height * 0.60)
                             .cornerRadius(10)
+                        Button("Library") {
+                            showingPhotoLibrary = true
+                        }
+                        .padding()
+                        .background(Color.orange)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .sheet(isPresented: $showingPhotoLibrary) {
+                            PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
+                        }
+                        Button("Add Food Item") {
+                            showingAddItemSheet = true
+                        }
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                        .sheet(isPresented: $showingAddItemSheet) {
+                            AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems)
+                        }
                         Button(action: {
-                            isCameraPresented = true
+                            isCameraActive.toggle()
                         }) {
                             Image(systemName: "camera")
                                 .font(.largeTitle)
@@ -70,6 +89,7 @@ struct ContentView: View {
                                 .foregroundColor(.white)
                                 .clipShape(Circle())
                         }
+                        .padding(.top, 10)
                     }
                     Spacer()
                 }
@@ -77,53 +97,20 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.white)
-            .sheet(isPresented: $isCameraPresented) {
-                ImagePicker(sourceType: .camera, selectedImage: $image)
-            }
         }
     }
 
     var rawInventoryScreen: some View {
-        VStack {
-            TextField("Item Name", text: $newItemName)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            TextField("Date", text: $newItemDate)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            TextField("Expiration Date", text: $newItemExpirationDate)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            Button("Add Food Item") {
-                let newItem = FoodItem(itemName: newItemName, date: newItemDate, expirationDate: newItemExpirationDate)
-                foodItems.append(newItem)
-                newItemName = ""
-                newItemDate = ""
-                newItemExpirationDate = ""
-                hideKeyboard()
-            }
-            .padding()
-            .background(Color.green)
-            .foregroundColor(.white)
-            .cornerRadius(8)
-
-            List {
-                ForEach(foodItems) { item in
-                    VStack(alignment: .leading) {
-                        Text(item.itemName)
-                            .font(.headline)
-                        Text(item.date)
-                        Text(item.expirationDate)
-                    }
+        List {
+            ForEach(foodItems) { item in
+                VStack(alignment: .leading) {
+                    Text(item.itemName)
+                        .font(.headline)
+                    Text(item.date)
+                    Text(item.expirationDate)
                 }
-                .onDelete(perform: deleteFoodItems)
             }
-            .toolbar {
-                EditButton()
-            }
-        }
-        .onTapGesture {
-            hideKeyboard()
+            .onDelete(perform: deleteFoodItems)
         }
     }
 
@@ -138,43 +125,131 @@ struct ContentView_Previews: PreviewProvider {
     }
 }
 
-struct ImagePicker: UIViewControllerRepresentable {
-    var sourceType: UIImagePickerController.SourceType
-    @Binding var selectedImage: Image?
+struct AddItemSheet: View {
+    @Binding var isPresented: Bool
+    @Binding var foodItems: [FoodItem]
+    @State private var newItemName: String = ""
+    @State private var newItemDate: String = ""
+    @State private var newItemExpirationDate: String = ""
 
-    func makeUIViewController(context: UIViewControllerRepresentableContext<ImagePicker>) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: UIViewControllerRepresentableContext<ImagePicker>) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        var parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.selectedImage = Image(uiImage: image)
+    var body: some View {
+        NavigationView {
+            Form {
+                TextField("Item Name", text: $newItemName)
+                TextField("Date", text: $newItemDate)
+                TextField("Expiration Date", text: $newItemExpirationDate)
             }
-
-            picker.dismiss(animated: true)
+            .navigationTitle("Add Food Item")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        let newItem = FoodItem(itemName: newItemName, date: newItemDate, expirationDate: newItemExpirationDate)
+                        foodItems.append(newItem)
+                        isPresented = false
+                    }
+                }
+            }
         }
     }
 }
 
-extension View {
-    func hideKeyboard() {
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+struct PhotoLibrarySheet: View {
+    @Binding var isPresented: Bool
+    @Binding var pastPhotos: [Image]
+
+    var body: some View {
+        NavigationView {
+            List {
+                ForEach(pastPhotos.indices, id: \.self) { index in
+                    pastPhotos[index]
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 100)
+                        .cornerRadius(10)
+                }
+                .onDelete(perform: deletePastPhotos)
+            }
+            .navigationTitle("Photo Library")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
+    }
+
+    func deletePastPhotos(at offsets: IndexSet) {
+        pastPhotos.remove(atOffsets: offsets)
+    }
+}
+
+struct CameraView: UIViewControllerRepresentable {
+    @Binding var image: Image?
+    @Binding var isCameraActive: Bool
+    
+    func makeUIViewController(context: Context) -> UIViewController {
+        let viewController = CameraViewController()
+        viewController.imageHandler = { uiImage in
+            self.image = Image(uiImage: uiImage)
+        }
+        return viewController
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        if isCameraActive {
+            (uiViewController as? CameraViewController)?.takePhoto()
+            isCameraActive = false
+        }
+    }
+}
+
+class CameraViewController: UIViewController {
+    var imageHandler: ((UIImage) -> Void)?
+    private let captureSession = AVCaptureSession()
+    private var capturePhotoOutput = AVCapturePhotoOutput()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupCamera()
+    }
+
+    private func setupCamera() {
+        guard let captureDevice = AVCaptureDevice.default(for: .video) else { return }
+        do {
+            let input = try AVCaptureDeviceInput(device: captureDevice)
+            captureSession.addInput(input)
+            captureSession.startRunning()
+            
+            let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            previewLayer.frame = view.bounds
+            view.layer.addSublayer(previewLayer)
+
+            if captureSession.canAddOutput(capturePhotoOutput) {
+                captureSession.addOutput(capturePhotoOutput)
+            }
+        } catch {
+            print(error.localizedDescription)
+        }
+    }
+
+    func takePhoto() {
+        let settings = AVCapturePhotoSettings()
+        capturePhotoOutput.capturePhoto(with: settings, delegate: self)
+    }
+}
+
+extension CameraViewController: AVCapturePhotoCaptureDelegate {
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        guard let imageData = photo.fileDataRepresentation(),
+              let uiImage = UIImage(data: imageData) else { return }
+        imageHandler?(uiImage)
     }
 }
 
