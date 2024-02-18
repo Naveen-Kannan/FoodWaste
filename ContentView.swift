@@ -12,7 +12,8 @@ struct ContentView: View {
     @State private var isCameraActive = false
     @State private var pastPhotos: [Image] = []
     @State private var showingEnlargedImage: Image? = nil
-
+    @State private var selectedItem: FoodItem? = nil
+    
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -110,25 +111,26 @@ struct ContentView: View {
                     HStack {
                         Text("Image")
                             .font(.headline)
-                            .frame(width: 80, alignment: .center)
-
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
                         Text("Item")
                             .font(.headline)
-                            .frame(minWidth: 100, alignment: .center)
-
-                        Text("Purchase Date")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        Text("Quantity")
                             .font(.headline)
-                            .frame(minWidth: 120, alignment: .center)
-
-                        Text("Expiration Date")
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
+                        Text("Expires")
                             .font(.headline)
-                            .frame(minWidth: 120, alignment: .center)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                        
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
-
+                    
                     Divider()
-
+                    
                     // Displaying each item in a row format aligned under the headers
                     ForEach(foodItems) { item in
                         HStack {
@@ -139,17 +141,17 @@ struct ContentView: View {
                                 .cornerRadius(10)
                                 .padding(.leading)
                                 .onTapGesture {
-                                    self.showingEnlargedImage = item.image
+                                    self.selectedItem = item
                                 }
-
+                            
                             Text(item.itemName)
-                                .frame(minWidth: 100, alignment: .center)
-
-                            Text(item.purchaseDate, style: .date)
-                                .frame(minWidth: 120, alignment: .center)
-
-                            Text(item.expirationDate, style: .date)
-                                .frame(minWidth: 120, alignment: .center)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            
+                            Text("\(item.quantity)") // Display the quantity
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            
+                            Text("\(item.daysUntilExpiration) days")
+                                .frame(maxWidth: .infinity, alignment: .center)
                         }
                         .padding(.vertical, 4)
                         Divider()
@@ -157,31 +159,46 @@ struct ContentView: View {
                 }
             }
             .padding(.horizontal)
-
-            // Overlay for enlarged image
-            if let enlargedImage = showingEnlargedImage {
+            
+            // Overlay for enlarged image and additional details
+            if let selectedItem = selectedItem { // Use selectedItem for the overlay
                 Color.black.opacity(0.5)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
-                        self.showingEnlargedImage = nil
+                        self.selectedItem = nil // Dismiss overlay
                     }
-
-                enlargedImage
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.height * 0.7)
-                    .cornerRadius(20)
-                    .shadow(radius: 10)
+                
+                VStack(spacing: 16) {
+                    selectedItem.image
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: UIScreen.main.bounds.width * 0.7, height: UIScreen.main.bounds.height * 0.4)
+                        .cornerRadius(20)
+                        .shadow(radius: 10)
+                    
+                    // New: Display purchase and expiration dates below the image
+                    VStack {
+                        Text("Purchased: \(selectedItem.purchaseDate.formatted(date: .long, time: .omitted))")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                        
+                        Text("Expires: \(selectedItem.expirationDate.formatted(date: .long, time: .omitted))")
+                            .foregroundColor(.white)
+                            .font(.headline)
+                    }
                     .padding()
-                    .transition(.scale)
-                    .onTapGesture {
-                        self.showingEnlargedImage = nil
-                    }
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(10)
+                }
+                .padding()
+                .transition(.scale)
+                .onTapGesture {
+                    self.selectedItem = nil // Also dismiss overlay when tapped
+                }
             }
         }
     }
-}
-
+    
     // MARK: - FoodItem Model
     struct FoodItem: Identifiable {
         var id = UUID()
@@ -189,6 +206,15 @@ struct ContentView: View {
         var purchaseDate: Date
         var expirationDate: Date
         var image: Image = Image(systemName: "photo")
+        var quantity: String // New quantity property
+        
+        var daysUntilExpiration: Int {
+            let calendar = Calendar.current
+            let startOfDayForNow = calendar.startOfDay(for: Date())
+            let startOfDayForExpiration = calendar.startOfDay(for: expirationDate)
+            let components = calendar.dateComponents([.day], from: startOfDayForNow, to: startOfDayForExpiration)
+            return components.day ?? 0 // Returns 0 if for some reason it can't calculate
+        }
     }
     
     // MARK: - Camera View
@@ -355,6 +381,8 @@ struct ContentView: View {
         @State private var isPurchaseDateCalendarExpanded = false
         @State private var isExpirationDateCalendarExpanded = false
         @FocusState private var isItemNameFocused: Bool
+        @State private var newItemQuantity: String = "" // State for new item quantity
+        
         
         var body: some View {
             NavigationView {
@@ -364,6 +392,9 @@ struct ContentView: View {
                         .onAppear {
                             self.isItemNameFocused = true
                         }
+                    
+                    TextField("Quantity", text: $newItemQuantity) // New TextField for quantity
+                    
                     
                     if let selectedImage = selectedImage {
                         selectedImage
@@ -453,7 +484,8 @@ struct ContentView: View {
                                 itemName: newItemName,
                                 purchaseDate: newItemPurchaseDate,
                                 expirationDate: newItemExpirationDate,
-                                image: selectedImage ?? Image(systemName: "photo")
+                                image: selectedImage ?? Image(systemName: "photo"),
+                                quantity: newItemQuantity
                             )
                             foodItems.append(newItem)
                             isPresented = false
@@ -492,9 +524,10 @@ struct ContentView: View {
         }
     }
     
-// MARK: - Preview Provider
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
+    // MARK: - Preview Provider
+    struct ContentView_Previews: PreviewProvider {
+        static var previews: some View {
+            ContentView()
+        }
     }
 }
