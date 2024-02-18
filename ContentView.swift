@@ -2,6 +2,22 @@ import SwiftUI
 import AVFoundation
 import Combine
 
+extension Color {
+    static let Beige = Color(red: 1.0, green: 0.96, blue: 0.86)
+    static let dustyRose = Color(red: 0.86, green: 0.63, blue: 0.63)
+    static let mutedPink = Color(red: 0.91, green: 0.67, blue: 0.67)
+    static let sageGreen = Color(red: 0.69, green: 0.73, blue: 0.54)
+    static let softCoral = Color(red: 0.94, green: 0.50, blue: 0.50)
+    static let teal = Color(red: 0.00, green: 0.50, blue: 0.50)
+    static let turquoise = Color(red: 0.25, green: 0.88, blue: 0.82)
+    static let lightBrown = Color(red: 0.65, green: 0.50, blue: 0.39)
+    static let taupe = Color(red: 0.40, green: 0.40, blue: 0.40)
+    static let navyBlue = Color(red: 0.00, green: 0.00, blue: 0.50)
+    static let warmGrey = Color(red: 0.50, green: 0.50, blue: 0.50)
+    static let burntSienna = Color(red: 0.91, green: 0.45, blue: 0.32)
+    static let terracotta = Color(red: 0.89, green: 0.45, blue: 0.36)
+}
+
 // MARK: - ContentView
 struct ContentView: View {
     @State private var selectedTab = 0
@@ -22,7 +38,8 @@ struct ContentView: View {
     @State private var editingItem: FoodItem?
     @State private var showingConfirmationDialog = false
     @State private var showingDeleteConfirmation = false
-    
+    @State private var isLoading = false // State to control the loading screen appearance
+
     var sortedFoodItems: [FoodItem] {
         foodItems.sorted { $0.daysUntilExpiration < $1.daysUntilExpiration }
     }
@@ -33,6 +50,8 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("Home")
+                        .foregroundColor(.Beige)
+                        .background(Color.sageGreen)
                 }
                 .tag(0)
             
@@ -40,6 +59,8 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "leaf.fill")
                     Text("Inventory")
+                        .foregroundColor(.Beige)
+                        .background(Color.sageGreen)
                 }
                 .tag(1)
             
@@ -47,39 +68,45 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "chart.bar.xaxis")
                     Text("Analytics")
+                        .foregroundColor(.Beige)
+                        .background(Color.sageGreen)
                 }
                 .tag(2)
             
-            Color.blue
-                .tabItem {
-                    Image(systemName: "message.fill")
-                    Text("Chat")
-                }
-                .tag(3)
+            ChatView() //chat window
+                   .tabItem {
+                       Image(systemName: "message.fill")
+                       Text("Chat")
+                           .foregroundColor(.Beige)
+                           .background(Color.sageGreen)
+                   }
+                   .tag(3)
         }
         .overlay(
             VStack {
                 Spacer()
-                HStack {
-                    Spacer()
-                    // "Add Manually" Button as a Text Bubble
-                    Button(action: {
-                        showingAddItemSheet = true
-                    }) {
-                        Text("Add Manually")
-                            .font(.headline)
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
-                            .foregroundColor(.white)
-                            .background(Color.blue)
-                            .cornerRadius(20)
-                            .shadow(radius: 2)
+                if selectedTab == 0 { // Check if the home screen tab is selected
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            showingAddItemSheet = true
+                        }) {
+                            Text("Add Manually")
+                                .font(.headline)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .foregroundColor(.Beige)
+                                .background(Color.sageGreen)
+                                .cornerRadius(20)
+                                .shadow(radius: 2)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 70) // Adjust padding as needed
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 70) // Increase bottom padding to move the button up
                 }
             }
         )
+
         .sheet(isPresented: $showingAddItemSheet) {
             AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems, pastPhotos: $pastPhotos)
         }
@@ -99,8 +126,8 @@ struct ContentView: View {
                         showingPhotoLibrary = true
                     }
                     .padding()
-                    .background(Color.black.opacity(0.5))
-                    .foregroundColor(.white)
+                    .background(Color.black.opacity(0.1))
+                    .foregroundColor(.Beige)
                     .cornerRadius(8)
                     .sheet(isPresented: $showingPhotoLibrary) {
                         PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
@@ -116,8 +143,8 @@ struct ContentView: View {
                         Image(systemName: "camera")
                             .font(.largeTitle)
                             .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
+                            .background(Color.sageGreen)
+                            .foregroundColor(Color.Beige)
                             .clipShape(Circle())
                     }
                     
@@ -128,8 +155,8 @@ struct ContentView: View {
                         Image(systemName: "calendar.badge.clock")
                             .font(.largeTitle)
                             .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
+                            .background(Color.sageGreen)
+                            .foregroundColor(.Beige)
                             .clipShape(Circle())
                     }
                     
@@ -140,8 +167,8 @@ struct ContentView: View {
                         Image(systemName: "barcode.viewfinder")
                             .font(.largeTitle)
                             .padding()
-                            .background(Color.blue)
-                            .foregroundColor(.white)
+                            .background(Color.sageGreen)
+                            .foregroundColor(.Beige)
                             .clipShape(Circle())
                     }
                 }
@@ -150,7 +177,7 @@ struct ContentView: View {
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
+            .background(Color.Beige)
         }
     }
 
@@ -236,15 +263,15 @@ struct ContentView: View {
                     
                     VStack {
                         Text("Purchased: \(selectedItem.purchaseDate.formatted(date: .long, time: .omitted))")
-                            .foregroundColor(.white)
+                            .foregroundColor(.Beige)
                             .font(.headline)
                         
                         Text("Expires: \(selectedItem.expirationDate.formatted(date: .long, time: .omitted))")
-                            .foregroundColor(.white)
+                            .foregroundColor(.Beige)
                             .font(.headline)
                     }
                     .padding()
-                    .background(Color.black.opacity(0.7))
+                    .background(Color.sageGreen)
                     .cornerRadius(10)
                 }
                 .padding()
@@ -268,7 +295,84 @@ struct ContentView: View {
             )
         }
     }
+
+    struct Message: Identifiable {
+        let id = UUID()
+        let text: String
+        let isUserMessage: Bool // Determine if the message is from the user
+    }
     
+    struct ChatView: View {
+        @State private var messages: [Message] = []
+        @State private var inputText: String = ""
+        
+        var body: some View {
+            VStack {
+                ScrollView {
+                    ScrollViewReader { scrollView in
+                        VStack {
+                            ForEach(messages) { message in
+                                ChatBubble(isUserMessage: message.isUserMessage, text: message.text)
+                                    .id(message.id) // Ensure you add this
+                            }
+                        }
+                        .onAppear {
+                            scrollView.scrollTo(messages.last?.id, anchor: .bottom)
+                        }
+                    }
+                }
+
+                
+                HStack {
+                    TextField("Type a message", text: $inputText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .frame(minHeight: CGFloat(30))
+                    
+                    Button(action: {
+                        sendMessage()
+                    }) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .padding(5)
+                    }
+                }.padding()
+            }
+            
+            .navigationBarTitle("Chat", displayMode: .inline)
+        }
+        
+        private func sendMessage() {
+            
+            
+            let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedText.isEmpty else { return }
+            
+            let message = Message(text: trimmedText, isUserMessage: true)
+            messages.append(message)
+            inputText = "" // Clear input field
+        }
+    }
+
+    struct ChatBubble: View {
+        let isUserMessage: Bool
+        let text: String
+        
+        var body: some View {
+            HStack {
+                if isUserMessage { Spacer() }
+                Text(text)
+                    .padding()
+                    .foregroundColor(isUserMessage ? .white : .black)
+                    .background(isUserMessage ? Color.navyBlue : Color.Beige)
+                    .cornerRadius(15)
+                if !isUserMessage { Spacer() }
+            }
+        }
+    }
+
+    
+
     
     // MARK: - FoodItem Model
     struct FoodItem: Identifiable, Equatable {
@@ -373,7 +477,7 @@ struct ContentView: View {
                         Spacer() // Ensures the tap gesture covers the entire row
                     }
                     .padding(.vertical, 4)
-                    .background(self.selectedIndex == index ? Color.blue.opacity(0.2) : Color.clear) // Highlight the background instead of border
+                    .background(self.selectedIndex == index ? Color.sageGreen.opacity(0.2) : Color.clear) // Highlight the background instead of border
                     .cornerRadius(10)
                     .contentShape(Rectangle()) // Makes the entire row tappable
                     .onTapGesture {
@@ -495,8 +599,8 @@ struct ContentView: View {
                                 }
                                 .padding(.vertical, 8)
                                 .padding(.horizontal)
-                                .background(Color.blue)
-                                .foregroundColor(.white)
+                                .background(Color.sageGreen)
+                                .foregroundColor(.Beige)
                                 .cornerRadius(8)
                             }
                         }
