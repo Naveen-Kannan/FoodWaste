@@ -16,6 +16,12 @@ struct ContentView: View {
     @State private var showingConfirmation = false
     @State private var itemToDelete: FoodItem?
     @State private var isDeleting = false
+    @State private var showingEditItemSheet = false // If you want a separate state for editing
+    @State private var confirmationMessage: String = ""
+    @State private var actionToConfirm: (() -> Void)?
+    @State private var editingItem: FoodItem?
+    @State private var showingConfirmationDialog = false
+    
     
     
     var body: some View {
@@ -55,6 +61,7 @@ struct ContentView: View {
                 }
                 .tag(4)
         }
+        
     }
     
     // MARK: Home Screen View
@@ -156,6 +163,7 @@ struct ContentView: View {
                             Text("\(item.daysUntilExpiration) days")
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
+                        
                         .padding(.vertical, 4)
                         Divider()
                     }
@@ -203,7 +211,7 @@ struct ContentView: View {
     }
     
     // MARK: - FoodItem Model
-    struct FoodItem: Identifiable {
+    struct FoodItem: Identifiable, Equatable {
         var id = UUID()
         var itemName: String
         var purchaseDate: Date
@@ -325,6 +333,7 @@ struct ContentView: View {
                     secondaryButton: .cancel()
                 )
             }
+            
         }
     }
     
@@ -534,3 +543,4 @@ struct ContentView: View {
         }
     }
 }
+ 
