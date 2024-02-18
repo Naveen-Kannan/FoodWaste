@@ -57,8 +57,34 @@ struct ContentView: View {
                 }
                 .tag(3)
         }
-        
+        .overlay(
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    // "Add Manually" Button as a Text Bubble
+                    Button(action: {
+                        showingAddItemSheet = true
+                    }) {
+                        Text("Add Manually")
+                            .font(.headline)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .foregroundColor(.white)
+                            .background(Color.blue)
+                            .cornerRadius(20)
+                            .shadow(radius: 2)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 70) // Increase bottom padding to move the button up
+                }
+            }
+        )
+        .sheet(isPresented: $showingAddItemSheet) {
+            AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems, pastPhotos: $pastPhotos)
+        }
     }
+
     
     // MARK: Home Screen View
     var homeScreen: some View {
@@ -80,33 +106,54 @@ struct ContentView: View {
                         PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
                     }
                 }
-                Button("Add Food Item") {
-                    showingAddItemSheet = true
-                }
-                .padding()
-                .background(Color.green)
-                .foregroundColor(.white)
-                .cornerRadius(8)
-                .sheet(isPresented: $showingAddItemSheet) {
-                    AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems, pastPhotos: $pastPhotos)
-                }
-                Button(action: {
-                    isCameraActive.toggle()
-                }) {
-                    Image(systemName: "camera")
-                        .font(.largeTitle)
-                        .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .clipShape(Circle())
+
+                // HStack for camera buttons
+                HStack(spacing: 20) { // Adjust spacing as needed
+                    // For Items
+                    Button(action: {
+                        isCameraActive.toggle()
+                    }) {
+                        Image(systemName: "camera")
+                            .font(.largeTitle)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
+                    
+                    // For expiration date
+                    Button(action: {
+                        isCameraActive.toggle()
+                    }) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.largeTitle)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
+                    
+                    // For barcode
+                    Button(action: {
+                        isCameraActive.toggle()
+                    }) {
+                        Image(systemName: "barcode.viewfinder")
+                            .font(.largeTitle)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .clipShape(Circle())
+                    }
                 }
                 .padding(.top, 10)
+                
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.white)
         }
     }
+
     
     // MARK: Inventory Screen View with Top Tabs
     var inventoryScreen: some View {
@@ -556,4 +603,3 @@ struct ContentView: View {
         }
     }
 }
-
