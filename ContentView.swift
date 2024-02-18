@@ -24,9 +24,9 @@ struct ContentView: View {
     @State private var showingDeleteConfirmation = false
     
     var sortedFoodItems: [FoodItem] {
-           foodItems.sorted { $0.daysUntilExpiration < $1.daysUntilExpiration }
-       }
-
+        foodItems.sorted { $0.daysUntilExpiration < $1.daysUntilExpiration }
+    }
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             homeScreen
@@ -43,26 +43,19 @@ struct ContentView: View {
                 }
                 .tag(1)
             
-            Color.red
-                .tabItem {
-                    Image(systemName: "book.fill")
-                    Text("Recipes")
-                }
-                .tag(2)
-            
             Color.gray
                 .tabItem {
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                    Text("Waste Reduction")
+                    Image(systemName: "chart.bar.xaxis")
+                    Text("Analytics")
                 }
-                .tag(3)
+                .tag(2)
             
             Color.blue
                 .tabItem {
                     Image(systemName: "message.fill")
                     Text("Chat")
                 }
-                .tag(4)
+                .tag(3)
         }
         
     }
@@ -228,7 +221,7 @@ struct ContentView: View {
             )
         }
     }
-
+    
     
     // MARK: - FoodItem Model
     struct FoodItem: Identifiable, Equatable {
@@ -563,4 +556,4 @@ struct ContentView: View {
         }
     }
 }
- 
+
