@@ -21,9 +21,12 @@ struct ContentView: View {
     @State private var actionToConfirm: (() -> Void)?
     @State private var editingItem: FoodItem?
     @State private var showingConfirmationDialog = false
+    @State private var showingDeleteConfirmation = false
     
-    
-    
+    var sortedFoodItems: [FoodItem] {
+           foodItems.sorted { $0.daysUntilExpiration < $1.daysUntilExpiration }
+       }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             homeScreen
@@ -134,7 +137,6 @@ struct ContentView: View {
                         Text("Expires")
                             .font(.headline)
                             .frame(maxWidth: .infinity, alignment: .center)
-                        
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 8)
@@ -142,7 +144,7 @@ struct ContentView: View {
                     Divider()
                     
                     // Displaying each item in a row format aligned under the headers
-                    ForEach(foodItems) { item in
+                    ForEach(sortedFoodItems) { item in
                         HStack {
                             item.image
                                 .resizable()
@@ -151,7 +153,7 @@ struct ContentView: View {
                                 .cornerRadius(10)
                                 .padding(.leading)
                                 .onTapGesture {
-                                    self.selectedItem = item
+                                    self.selectedItem = item // Set the selectedItem for the overlay
                                 }
                             
                             Text(item.itemName)
@@ -163,8 +165,13 @@ struct ContentView: View {
                             Text("\(item.daysUntilExpiration) days")
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
-                        
                         .padding(.vertical, 4)
+                        .background(item.daysUntilExpiration <= 3 ? Color.red.opacity(0.2) : Color.clear) // Highlight row if expiring in <= 3 days
+                        .background(item.daysUntilExpiration <= 0 ? Color.red.opacity(0.5) : Color.clear) // Highlight row darker if already expired
+                        .onLongPressGesture {
+                            self.itemToDelete = item
+                            self.showingDeleteConfirmation = true
+                        }
                         Divider()
                     }
                 }
@@ -172,7 +179,7 @@ struct ContentView: View {
             .padding(.horizontal)
             
             // Overlay for enlarged image and additional details
-            if let selectedItem = selectedItem { // Use selectedItem for the overlay
+            if let selectedItem = selectedItem {
                 Color.black.opacity(0.5)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
@@ -187,7 +194,6 @@ struct ContentView: View {
                         .cornerRadius(20)
                         .shadow(radius: 10)
                     
-                    // New: Display purchase and expiration dates below the image
                     VStack {
                         Text("Purchased: \(selectedItem.purchaseDate.formatted(date: .long, time: .omitted))")
                             .foregroundColor(.white)
@@ -208,7 +214,21 @@ struct ContentView: View {
                 }
             }
         }
+        .alert(isPresented: $showingDeleteConfirmation) {
+            Alert(
+                title: Text("Delete Item"),
+                message: Text("Are you sure you want to delete this item?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    if let itemToDelete = self.itemToDelete, let index = foodItems.firstIndex(of: itemToDelete) {
+                        foodItems.remove(at: index)
+                        self.itemToDelete = nil // Reset to nil after deletion
+                    }
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
+
     
     // MARK: - FoodItem Model
     struct FoodItem: Identifiable, Equatable {
