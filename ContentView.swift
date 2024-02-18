@@ -13,6 +13,9 @@ struct ContentView: View {
     @State private var pastPhotos: [Image] = []
     @State private var showingEnlargedImage: Image? = nil
     @State private var selectedItem: FoodItem? = nil
+    @State private var showingConfirmation = false
+    @State private var itemToDelete: FoodItem?
+    @State private var isDeleting = false
     
     
     var body: some View {
