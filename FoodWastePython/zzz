@@ -1,0 +1,76 @@
+
+        
+        func sendInventoryCommandToServer(command: String, itemName: String, quantity: Int, purchaseDate: String, expirationDate: String) {
+            guard let url = URL(string: "http://10.31.34.150:5000/sendInventoryCommand") else {
+                return
+            }
+            
+            struct SendMessage: Codable {
+                var message: String = "Hello from swift!"
+            }
+
+            var message = command + "`" + itemName + "`" + String(quantity) + "`" + purchaseDate + "`" + expirationDate
+            let sendMessage = SendMessage(message: message)
+            guard let uploadData = try? JSONEncoder().encode(sendMessage) else {
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = uploadData
+
+            URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
+                if let response = response as? HTTPURLResponse, response.statusCode == 200 {
+                    DispatchQueue.main.async {
+                    }
+                } else {
+                    print("HTTP Request Failed \(String(describing: error))")
+                }
+            }.resume()
+        }
+        
+        func getDataFromServer() async -> String {
+            guard let url = URL(string: "http://10.31.34.150:5000/getData") else {
+                return "Invalid URL"
+            }
+
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                // Parse the JSON data received from the server
+                let decodedResponse = try JSONDecoder().decode([String: String].self, from: data)
+                return decodedResponse["message"] ?? "No message"
+            } catch {
+                print("Failed to fetch or decode JSON from server: \(error)")
+                return "Error: \(error.localizedDescription)"
+            }
+        }
+        
+        func sendDataToServer(message: String) {
+            guard let url = URL(string: "http://10.31.34.150:5000/sendData") else {
+                return
+            }
+            
+            struct SendMessage: Codable {
+                var message: String = "Hello from swift!"
+            }
+
+            let sendMessage = SendMessage(message: message)
+            guard let uploadData = try? JSONEncoder().encode(sendMessage) else {
+                return
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = uploadData
+
+            URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
+                if let response = response as? HTTPURLResponse, response.statusCode == 200 {
+                    DispatchQueue.main.async {
+                    }
+                } else {
+                    print("HTTP Request Failed \(String(describing: error))")
+                }
+            }.resume()
+        }

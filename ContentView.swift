@@ -2,6 +2,15 @@ import SwiftUI
 import AVFoundation
 import Combine
 
+class GlobalData: ObservableObject {
+    static let shared = GlobalData()
+
+    @Published var scannedName: String = ""
+    @Published var scannedExpiry: String = ""
+    @Published var cameraMode: String = ""
+    @Published var lastChat: String = ""
+}
+
 extension Color {
     static let Beige = Color(red: 1.0, green: 0.96, blue: 0.86)
     static let dustyRose = Color(red: 0.86, green: 0.63, blue: 0.63)
@@ -20,6 +29,8 @@ extension Color {
 
 // MARK: - ContentView
 struct ContentView: View {
+    @ObservedObject var globalData = GlobalData.shared
+    
     @State private var selectedTab = 0
     @State private var image: Image? = nil
     @State private var foodItems: [FoodItem] = []
@@ -81,8 +92,7 @@ struct ContentView: View {
                         .background(Color.sageGreen)
                 }
                 .tag(1)
-            
-            Color.gray
+            analyticsScreen
                 .tabItem {
                     Image(systemName: "chart.bar.xaxis")
                     Text("Analytics")
@@ -166,6 +176,7 @@ struct ContentView: View {
                     // For Items
                     Button(action: {
                         isCameraActive.toggle()
+                        globalData.cameraMode = "items"
                     }) {
                         Image(systemName: "camera")
                             .font(.largeTitle)
@@ -178,6 +189,7 @@ struct ContentView: View {
                     // For expiration date
                     Button(action: {
                         isCameraActive.toggle()
+                        globalData.cameraMode = "expiration"
                     }) {
                         Image(systemName: "calendar.badge.clock")
                             .font(.largeTitle)
@@ -190,6 +202,7 @@ struct ContentView: View {
                     // For barcode
                     Button(action: {
                         isCameraActive.toggle()
+                        globalData.cameraMode = "barcode"
                     }) {
                         Image(systemName: "barcode.viewfinder")
                             .font(.largeTitle)
@@ -205,6 +218,61 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.Beige)
+        }
+    }
+    
+    func sendInventoryCommandToServer(command: String, itemName: String, quantity: String, purchaseDate: String, expirationDate: String) {
+        guard let url = URL(string: "http://10.31.34.150:5000/sendInventoryCommand") else {
+            return
+        }
+        
+        struct SendMessage: Codable {
+            var message: String = "Hello from swift!"
+        }
+        
+        var message = command + "`" + itemName + "`" + String(quantity) + "`" + purchaseDate + "`" + expirationDate
+        let sendMessage = SendMessage(message: message)
+        guard let uploadData = try? JSONEncoder().encode(sendMessage) else {
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = uploadData
+        
+        URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
+            if let response = response as? HTTPURLResponse, response.statusCode == 200 {
+                DispatchQueue.main.async {
+                }
+            } else {
+                print("HTTP Request Failed \(String(describing: error))")
+            }
+        }.resume()
+    }
+    
+    
+    func deleteItem() {
+        Task {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MM/dd/YYYY"
+            
+            
+            guard let validPurchaseDate = self.itemToDelete?.purchaseDate else {return}
+            guard let validExpirationDate = self.itemToDelete?.expirationDate else {return}
+            guard let itemName = self.itemToDelete?.itemName else {return}
+            guard let quantity = self.itemToDelete?.quantity else {return}
+            
+            
+            await sendInventoryCommandToServer(command: "delete", itemName: itemName, quantity: quantity, purchaseDate: dateFormatter.string(from: validPurchaseDate), expirationDate: dateFormatter.string(from: validExpirationDate))
+            
+            // Proceed with UI updates or other operations
+            DispatchQueue.main.async {
+                if let itemToDelete = self.itemToDelete, let index = foodItems.firstIndex(of: itemToDelete) {
+                    foodItems.remove(at: index)
+                    self.itemToDelete = nil // Reset to nil after deletion
+                }
+            }
         }
     }
     
@@ -330,14 +398,73 @@ struct ContentView: View {
                 title: Text("Delete Item"),
                 message: Text("Are you sure you want to delete this item?"),
                 primaryButton: .destructive(Text("Delete")) {
-                    if let itemToDelete = self.itemToDelete, let index = foodItems.firstIndex(of: itemToDelete) {
-                        foodItems.remove(at: index)
-                        self.itemToDelete = nil // Reset to nil after deletion
-                    }
+                    deleteItem()
                 },
                 secondaryButton: .cancel()
             )
         }
+    }
+    
+    var analyticsScreen: some View {
+        VStack(spacing: 0) { // Reduce spacing between elements if needed
+            // Displaying the main message
+            Spacer()
+            VStack(alignment: .leading, spacing: 0) {
+                HStack {
+                    Spacer() // Pushes the text to the center
+                    Text("84")
+                        .font(.system(size: 80)) // Larger size for the number
+                        .fontWeight(.bold)
+                        .foregroundColor(.Beige)
+                    Spacer() // Ensures the text stays centered
+                }
+                
+                HStack {
+                    Spacer() // Pushes the text to the center
+                    Text("Customers expected to arrive in the next hour")
+                        .font(.system(size: 30)) // Larger size for the number
+                        .fontWeight(.bold)
+                        .foregroundColor(.Beige)
+                    Spacer() // Ensures the text stays centered
+                }
+            }
+            .padding(.bottom) // Add padding at the bottom instead of uniformly
+            .background(Color.sageGreen)
+            .cornerRadius(10)
+            Spacer()
+            
+            // New warning message
+            Text("*** WARNING ***\n\nWe have INSUFFICIENT Chicken and SURPLUS Beef")
+                .font(.title2) // Adjust the font size as needed
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center) // Center align the text
+                .foregroundColor(.softCoral) // Set the text color to red for warning
+                .padding() // Add padding around the text
+                .background(Color.clear) // Ensure the background is transparent
+                .cornerRadius(10) // Optional: if you want rounded corners
+                .padding(.bottom) // Add some padding at the bottom if needed
+            
+            Spacer() // Pushes everything up and makes room for the tab at the bottom
+            
+            // Placeholder for Data Analysis tab
+            Text("Data Analysis")
+                .font(.headline) // Adjust the font size as needed
+                .fontWeight(.bold)
+                .foregroundColor(.Beige) // Set the text color
+                .padding() // Add padding around the text for a better look
+                .frame(maxWidth: .infinity) // Ensure it takes up the available width
+                .background(Color.Beige) // Set the background color of the tab
+                .cornerRadius(10) // Optional: if you want rounded corners for the tab
+                .padding(.horizontal) // Add some horizontal padding
+                .padding(.bottom, 50) // Adjust the bottom padding to position above the tab bar
+            
+            // Existing tab bar or bottom navigation placeholder
+            // This is where you would add your actual tab bar or bottom navigation if applicable
+        }
+        
+        .padding([.leading, .trailing, .bottom]) // Specify padding to exclude the top
+        .background(Color.Beige) // Set the entire screen's background to Beige
+        .edgesIgnoringSafeArea(.all)
     }
     
     struct Message: Identifiable {
@@ -349,7 +476,8 @@ struct ContentView: View {
     struct ChatView: View {
         @State private var messages: [Message] = []
         @State private var inputText: String = ""
-        
+        @ObservedObject var globalData = GlobalData.shared
+
         var body: some View {
             VStack {
                 ScrollView {
@@ -392,14 +520,96 @@ struct ContentView: View {
         }
         
         private func sendMessage() {
+                    let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedText.isEmpty else { return }
+                    
+                    // User message
+                    let userMessage = Message(text: trimmedText, isUserMessage: true)
+                    messages.append(userMessage)
             
+                    var response = ""
+                    Task {
+                        let loadingMessage = Message(text: "Loading...", isUserMessage: false)
+                        DispatchQueue.main.async {
+                            self.messages.append(loadingMessage)
+                        }
+                        await sendChat(prompt: userMessage.text)
+
+                        //response = Message(text: globalData.lastChat, isUserMessage: true)
+                        self.messages.removeAll(where: { $0.text == "Loading..." })
+                        let responseMessage = Message(text: globalData.lastChat, isUserMessage: false)
+                        self.messages.append(responseMessage)
+                    }
+                    inputText = "" // Clear input field
+                }
+        
+        
+        func sendChat(prompt: String) async {
+            guard let url = URL(string: "http://10.31.34.150:5000/sendChat") else {
+                return
+            }
             
-            let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedText.isEmpty else { return }
+            struct SendMessage: Codable {
+                var message: String = "Hello from swift!"
+            }
             
-            let message = Message(text: trimmedText, isUserMessage: true)
-            messages.append(message)
-            inputText = "" // Clear input field
+            var message = prompt
+            let sendMessage = SendMessage(message: message)
+            guard let uploadData = try? JSONEncoder().encode(sendMessage) else {
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = uploadData
+            
+            do {
+                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadData)
+                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    print("Unexpected response from server")
+                    return
+                }
+                print("Image sent successfully")
+                let res = await getChat()
+                print(res)
+                //scannedName = res
+                GlobalData.shared.lastChat = res
+
+
+                
+            } catch {
+                print("HTTP Request Failed \(error)")
+            }
+            
+            URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
+                if let response = response as? HTTPURLResponse, response.statusCode == 200 {
+                    DispatchQueue.main.async {
+                    }
+                } else {
+                    print("HTTP Request Failed \(String(describing: error))")
+                }
+            }.resume()
+        }
+        
+        func getChat() async -> String {
+            guard let url = URL(string: "http://10.31.34.150:5000/getMessage") else {
+                return "Invalid URL"
+            }
+            
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                // Parse the JSON data received from the server
+                let decodedResponse = try JSONDecoder().decode([String: String].self, from: data)
+                var message = decodedResponse["message"] ?? "No message"
+                if (message == "Product not found"){
+                    return ""
+                }
+                return message
+            } catch {
+                print("Failed to fetch or decode JSON from server: \(error)")
+                return "Error: \(error.localizedDescription)"
+            }
         }
     }
     
@@ -466,6 +676,8 @@ struct ContentView: View {
     }
     
     class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegate {
+        @ObservedObject var globalData = GlobalData.shared
+
         var imageHandler: ((UIImage) -> Void)?
         private let captureSession = AVCaptureSession()
         private var capturePhotoOutput = AVCapturePhotoOutput()
@@ -502,7 +714,143 @@ struct ContentView: View {
         func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
             guard let imageData = photo.fileDataRepresentation(),
                   let uiImage = UIImage(data: imageData) else { return }
+            
+            Task{
+                if (globalData.cameraMode == "barcode") {
+                    await sendBarcodeToServer(image: uiImage)
+                }
+                if (globalData.cameraMode == "expiration") {
+                    await sendExpiryToServer(image: uiImage)
+                }
+            }
+            
             imageHandler?(uiImage)
+        }
+        
+        func sendBarcodeToServer(image: UIImage) async {
+            guard let url = URL(string: "http://10.31.34.150:5000/sendBarcode") else {
+                print("Invalid URL")
+                return
+            }
+            
+            guard let imageData = image.jpegData(compressionQuality: 0.5) else {
+                print("Could not get JPEG representation of UIImage")
+                return
+            }
+            
+            let base64ImageString = imageData.base64EncodedString()
+            let requestBody = ["image": base64ImageString]
+            
+            guard let uploadData = try? JSONEncoder().encode(requestBody) else {
+                print("Failed to encode image data")
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = uploadData
+            
+            do {
+                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadData)
+                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    print("Unexpected response from server")
+                    return
+                }
+                print("Image sent successfully")
+                let res = await getBarcodeMessageFromServer()
+                print(res)
+                //scannedName = res
+                GlobalData.shared.scannedName = res
+
+
+                
+            } catch {
+                print("HTTP Request Failed \(error)")
+            }
+        }
+        
+        func getBarcodeMessageFromServer() async -> String {
+            guard let url = URL(string: "http://10.31.34.150:5000/getMessage") else {
+                return "Invalid URL"
+            }
+            
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                // Parse the JSON data received from the server
+                let decodedResponse = try JSONDecoder().decode([String: String].self, from: data)
+                var message = decodedResponse["message"] ?? "No message"
+                if (message == "Product not found"){
+                    return ""
+                }
+                return message
+            } catch {
+                print("Failed to fetch or decode JSON from server: \(error)")
+                return "Error: \(error.localizedDescription)"
+            }
+        }
+        
+        func sendExpiryToServer(image: UIImage) async {
+            guard let url = URL(string: "http://10.31.34.150:5000/sendExpiry") else {
+                print("Invalid URL")
+                return
+            }
+            
+            guard let imageData = image.jpegData(compressionQuality: 0.5) else {
+                print("Could not get JPEG representation of UIImage")
+                return
+            }
+            
+            let base64ImageString = imageData.base64EncodedString()
+            let requestBody = ["image": base64ImageString]
+            
+            guard let uploadData = try? JSONEncoder().encode(requestBody) else {
+                print("Failed to encode image data")
+                return
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.httpBody = uploadData
+            
+            do {
+                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadData)
+                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                    print("Unexpected response from server")
+                    return
+                }
+                print("Image sent successfully")
+                let res = await getExpiryMessageFromServer()
+                print(res)
+                //scannedName = res
+                GlobalData.shared.scannedName = res
+
+
+                
+            } catch {
+                print("HTTP Request Failed \(error)")
+            }
+        }
+        
+        func getExpiryMessageFromServer() async -> String {
+            guard let url = URL(string: "http://10.31.34.150:5000/getMessage") else {
+                return "Invalid URL"
+            }
+            
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                // Parse the JSON data received from the server
+                let decodedResponse = try JSONDecoder().decode([String: String].self, from: data)
+                var message = decodedResponse["message"] ?? "No message"
+                if (message == "Product not found"){
+                    return ""
+                }
+                return message
+            } catch {
+                print("Failed to fetch or decode JSON from server: \(error)")
+                return "Error: \(error.localizedDescription)"
+            }
         }
     }
     
@@ -598,7 +946,7 @@ struct ContentView: View {
         @Binding var isPresented: Bool
         @Binding var foodItems: [FoodItem]
         @Binding var pastPhotos: [Image]
-        @State private var newItemName: String = ""
+        @State private var newItemName: String = GlobalData.shared.scannedName
         @State private var newItemPurchaseDate = Date()
         @State private var newItemExpirationDate = Date()
         @State private var selectedImage: Image? = nil
@@ -705,6 +1053,35 @@ struct ContentView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("Add") {
+                            func sendInventoryCommandToServer(command: String, itemName: String, quantity: String, purchaseDate: String, expirationDate: String) {
+                                guard let url = URL(string: "http://10.31.34.150:5000/sendInventoryCommand") else {
+                                    return
+                                }
+                                
+                                struct SendMessage: Codable {
+                                    var message: String = "Hello from swift!"
+                                }
+                                
+                                var message = command + "`" + itemName + "`" + String(quantity) + "`" + purchaseDate + "`" + expirationDate
+                                let sendMessage = SendMessage(message: message)
+                                guard let uploadData = try? JSONEncoder().encode(sendMessage) else {
+                                    return
+                                }
+                                
+                                var request = URLRequest(url: url)
+                                request.httpMethod = "POST"
+                                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                                request.httpBody = uploadData
+                                
+                                URLSession.shared.uploadTask(with: request, from: uploadData) { data, response, error in
+                                    if let response = response as? HTTPURLResponse, response.statusCode == 200 {
+                                        DispatchQueue.main.async {
+                                        }
+                                    } else {
+                                        print("HTTP Request Failed \(String(describing: error))")
+                                    }
+                                }.resume()
+                            }
                             let newItem = FoodItem(
                                 itemName: newItemName,
                                 purchaseDate: newItemPurchaseDate,
@@ -712,7 +1089,13 @@ struct ContentView: View {
                                 image: selectedImage ?? Image(systemName: "photo"),
                                 quantity: newItemQuantity
                             )
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateFormat = "MM/dd/YYYY"
+                            
                             foodItems.append(newItem)
+                            sendInventoryCommandToServer(command: "add", itemName: newItemName, quantity: newItemQuantity, purchaseDate: dateFormatter.string(from: newItemPurchaseDate), expirationDate: dateFormatter.string(from: newItemExpirationDate))
+                            
+                            GlobalData.shared.scannedName = ""
                             isPresented = false
                         }
                     }
