@@ -39,7 +39,25 @@ struct ContentView: View {
     @State private var showingConfirmationDialog = false
     @State private var showingDeleteConfirmation = false
     @State private var isLoading = false // State to control the loading screen appearance
-
+    
+    
+    init() {
+        // Set navigation bar background color
+        UINavigationBar.appearance().backgroundColor = UIColor(Color.sageGreen)
+        UINavigationBar.appearance().barTintColor = UIColor(Color.sageGreen) // For the bar background
+        UINavigationBar.appearance().isTranslucent = false // Optional: Based on your design needs
+        
+        // Set navigation bar title color
+        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(Color.Beige)]
+        
+        // Set navigation bar large title color (if you're using large titles)
+        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(Color.Beige)]
+        
+        // Customize the bottom tab bar background and item colors
+        UITabBar.appearance().backgroundColor = UIColor(Color.sageGreen) // Example background color for tab bar
+        UITabBar.appearance().unselectedItemTintColor = UIColor(Color.Beige.opacity(0.8)) // Example unselected item color
+        UITabBar.appearance().tintColor = UIColor(Color.dustyRose) // Example selected item color
+    }
     var sortedFoodItems: [FoodItem] {
         foodItems.sorted { $0.daysUntilExpiration < $1.daysUntilExpiration }
     }
@@ -50,7 +68,7 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("Home")
-                        .foregroundColor(.Beige)
+                        .foregroundColor(.Beige.opacity(0.7))
                         .background(Color.sageGreen)
                 }
                 .tag(0)
@@ -59,7 +77,7 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "leaf.fill")
                     Text("Inventory")
-                        .foregroundColor(.Beige)
+                        .foregroundColor(.Beige.opacity(0.7))
                         .background(Color.sageGreen)
                 }
                 .tag(1)
@@ -68,20 +86,22 @@ struct ContentView: View {
                 .tabItem {
                     Image(systemName: "chart.bar.xaxis")
                     Text("Analytics")
-                        .foregroundColor(.Beige)
+                        .foregroundColor(.Beige.opacity(0.7))
                         .background(Color.sageGreen)
                 }
                 .tag(2)
             
             ChatView() //chat window
-                   .tabItem {
-                       Image(systemName: "message.fill")
-                       Text("Chat")
-                           .foregroundColor(.Beige)
-                           .background(Color.sageGreen)
-                   }
-                   .tag(3)
+                .tabItem {
+                    Image(systemName: "message.fill")
+                    Text("Chat")
+                        .foregroundColor(.Beige)
+                        .background(Color.sageGreen)
+                }
+                .tag(3)
         }
+        .accentColor(Color.Beige.opacity(2.0)) // This should change the selected tab item color
+
         .overlay(
             VStack {
                 Spacer()
@@ -91,7 +111,7 @@ struct ContentView: View {
                         Button(action: {
                             showingAddItemSheet = true
                         }) {
-                            Text("Add Manually")
+                            Text("Add")
                                 .font(.headline)
                                 .padding(.vertical, 8)
                                 .padding(.horizontal, 12)
@@ -106,18 +126,25 @@ struct ContentView: View {
                 }
             }
         )
-
+        
         .sheet(isPresented: $showingAddItemSheet) {
             AddItemSheet(isPresented: $showingAddItemSheet, foodItems: $foodItems, pastPhotos: $pastPhotos)
         }
     }
-
+    
     
     // MARK: Home Screen View
     var homeScreen: some View {
         GeometryReader { geometry in
             VStack {
                 Spacer().frame(height: geometry.size.height * 0.05)
+                
+                Text("HodgePodge") // Your line of text
+                    .font(.system(size: 56, weight: .medium, design: .default))
+                    .foregroundColor(Color.sageGreen) // Set the text color to sageGreen
+                    .background(Color.clear) // Ensure background is transparent
+                    .padding(4) // Add some space below the text
+                
                 ZStack(alignment: .bottomTrailing) {
                     CameraView(image: $image, isCameraActive: $isCameraActive, pastPhotos: $pastPhotos)
                         .frame(width: geometry.size.width * 0.90, height: geometry.size.height * 0.60)
@@ -133,7 +160,7 @@ struct ContentView: View {
                         PhotoLibrarySheet(isPresented: $showingPhotoLibrary, pastPhotos: $pastPhotos)
                     }
                 }
-
+                
                 // HStack for camera buttons
                 HStack(spacing: 20) { // Adjust spacing as needed
                     // For Items
@@ -180,33 +207,49 @@ struct ContentView: View {
             .background(Color.Beige)
         }
     }
-
+    
     
     // MARK: Inventory Screen View with Top Tabs
     var inventoryScreen: some View {
         ZStack {
+            Color.Beige.edgesIgnoringSafeArea(.top)
+            
             ScrollView {
+                
                 VStack {
                     // Top tabs for labels with centered alignment above the respective elements
                     HStack {
                         Text("Image")
                             .font(.headline)
+                            .foregroundColor(Color.sageGreen) // Text color
                             .frame(maxWidth: .infinity, alignment: .center)
+                            .background(Color.clear) // Background color
+                        
                         
                         Text("Item")
                             .font(.headline)
+                            .foregroundColor(Color.sageGreen) // Text color
                             .frame(maxWidth: .infinity, alignment: .center)
+                            .background(Color.clear) // Background color
+                        
                         
                         Text("Quantity")
                             .font(.headline)
+                            .foregroundColor(Color.sageGreen) // Text color
                             .frame(maxWidth: .infinity, alignment: .center)
+                            .background(Color.clear) // Background color
+                        
                         
                         Text("Expires")
                             .font(.headline)
+                            .foregroundColor(Color.sageGreen) // Text color
                             .frame(maxWidth: .infinity, alignment: .center)
+                            .background(Color.clear) // Background color
+                        
                     }
+                    .padding(.vertical, 8) // Padding for top and bottom of the text
+                  // Apply background here for full width
                     .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
                     
                     Divider()
                     
@@ -232,9 +275,9 @@ struct ContentView: View {
                             Text("\(item.daysUntilExpiration) days")
                                 .frame(maxWidth: .infinity, alignment: .center)
                         }
-                        .padding(.vertical, 4)
-                        .background(item.daysUntilExpiration <= 3 ? Color.red.opacity(0.2) : Color.clear) // Highlight row if expiring in <= 3 days
-                        .background(item.daysUntilExpiration <= 0 ? Color.red.opacity(0.5) : Color.clear) // Highlight row darker if already expired
+                        //.padding(.vertical, 4)
+                        .background((item.daysUntilExpiration <= 3 && item.daysUntilExpiration > 0) ? Color.dustyRose : Color.clear) // Highlight row if expiring in <= 3 days
+                        .background(item.daysUntilExpiration <= 0 ? Color.red.opacity(0.8) : Color.clear) // Highlight row darker if already expired
                         .onLongPressGesture {
                             self.itemToDelete = item
                             self.showingDeleteConfirmation = true
@@ -242,12 +285,13 @@ struct ContentView: View {
                         Divider()
                     }
                 }
+                
             }
             .padding(.horizontal)
             
             // Overlay for enlarged image and additional details
             if let selectedItem = selectedItem {
-                Color.black.opacity(0.5)
+                Color.black.opacity(0.7)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
                         self.selectedItem = nil // Dismiss overlay
@@ -263,15 +307,15 @@ struct ContentView: View {
                     
                     VStack {
                         Text("Purchased: \(selectedItem.purchaseDate.formatted(date: .long, time: .omitted))")
-                            .foregroundColor(.Beige)
+                            .foregroundColor(.Beige.opacity(0.7))
                             .font(.headline)
                         
                         Text("Expires: \(selectedItem.expirationDate.formatted(date: .long, time: .omitted))")
-                            .foregroundColor(.Beige)
+                            .foregroundColor(.Beige.opacity(0.7))
                             .font(.headline)
                     }
                     .padding()
-                    .background(Color.sageGreen)
+                    .background(Color.sageGreen.opacity(0.7))
                     .cornerRadius(10)
                 }
                 .padding()
@@ -295,7 +339,7 @@ struct ContentView: View {
             )
         }
     }
-
+    
     struct Message: Identifiable {
         let id = UUID()
         let text: String
@@ -321,7 +365,9 @@ struct ContentView: View {
                         }
                     }
                 }
-
+                .background(Color.Beige) // Set the ScrollView background to Beige
+                
+                
                 
                 HStack {
                     TextField("Type a message", text: $inputText)
@@ -335,10 +381,13 @@ struct ContentView: View {
                             .resizable()
                             .frame(width: 30, height: 30)
                             .padding(5)
+                            .foregroundColor(Color.sageGreen) // Set the arrow icon color to sageGreen
                     }
-                }.padding()
+                }
+                .padding()
+                
             }
-            
+            .background(Color.Beige.edgesIgnoringSafeArea(.all)) // Set the entire ChatView background to Beige
             .navigationBarTitle("Chat", displayMode: .inline)
         }
         
@@ -353,7 +402,7 @@ struct ContentView: View {
             inputText = "" // Clear input field
         }
     }
-
+    
     struct ChatBubble: View {
         let isUserMessage: Bool
         let text: String
@@ -364,15 +413,15 @@ struct ContentView: View {
                 Text(text)
                     .padding()
                     .foregroundColor(isUserMessage ? .white : .black)
-                    .background(isUserMessage ? Color.navyBlue : Color.Beige)
+                    .background(isUserMessage ? Color.sageGreen : Color.Beige)
                     .cornerRadius(15)
                 if !isUserMessage { Spacer() }
             }
         }
     }
-
     
-
+    
+    
     
     // MARK: - FoodItem Model
     struct FoodItem: Identifiable, Equatable {
@@ -477,7 +526,7 @@ struct ContentView: View {
                         Spacer() // Ensures the tap gesture covers the entire row
                     }
                     .padding(.vertical, 4)
-                    .background(self.selectedIndex == index ? Color.sageGreen.opacity(0.2) : Color.clear) // Highlight the background instead of border
+                    .background(self.selectedIndex == index ? Color.sageGreen : Color.clear) // Highlight the background instead of border
                     .cornerRadius(10)
                     .contentShape(Rectangle()) // Makes the entire row tappable
                     .onTapGesture {
@@ -675,8 +724,8 @@ struct ContentView: View {
     // MARK: - Photo Library Sheet View
     struct PhotoLibrarySheet: View {
         @Binding var isPresented: Bool
-        @Binding var pastPhotos: [Image]
-        
+        @Binding var pastPhotos: [Image] // Assuming this is your array of photos
+
         var body: some View {
             NavigationView {
                 List {
@@ -687,6 +736,7 @@ struct ContentView: View {
                             .frame(height: 100)
                             .cornerRadius(10)
                     }
+                    .onDelete(perform: deletePhoto) // Enables swipe-to-delete functionality
                 }
                 .navigationTitle("Photo Library")
                 .toolbar {
@@ -698,7 +748,12 @@ struct ContentView: View {
                 }
             }
         }
+
+        func deletePhoto(at offsets: IndexSet) {
+            pastPhotos.remove(atOffsets: offsets) // Removes the photo at the swipe-to-delete action
+        }
     }
+
     
     // MARK: - Preview Provider
     struct ContentView_Previews: PreviewProvider {
