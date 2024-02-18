@@ -4,7 +4,7 @@ import Combine
 
 class GlobalData: ObservableObject {
     static let shared = GlobalData()
-
+    
     @Published var scannedName: String = ""
     @Published var scannedExpiry: String = ""
     @Published var cameraMode: String = ""
@@ -111,7 +111,7 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(Color.Beige.opacity(2.0)) // This should change the selected tab item color
-
+        
         .overlay(
             VStack {
                 Spacer()
@@ -316,7 +316,7 @@ struct ContentView: View {
                         
                     }
                     .padding(.vertical, 8) // Padding for top and bottom of the text
-                  // Apply background here for full width
+                    // Apply background here for full width
                     .padding(.horizontal, 8)
                     
                     Divider()
@@ -477,7 +477,7 @@ struct ContentView: View {
         @State private var messages: [Message] = []
         @State private var inputText: String = ""
         @ObservedObject var globalData = GlobalData.shared
-
+        
         var body: some View {
             VStack {
                 ScrollView {
@@ -520,28 +520,28 @@ struct ContentView: View {
         }
         
         private func sendMessage() {
-                    let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmedText.isEmpty else { return }
-                    
-                    // User message
-                    let userMessage = Message(text: trimmedText, isUserMessage: true)
-                    messages.append(userMessage)
+            let trimmedText = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedText.isEmpty else { return }
             
-                    var response = ""
-                    Task {
-                        let loadingMessage = Message(text: "Loading...", isUserMessage: false)
-                        DispatchQueue.main.async {
-                            self.messages.append(loadingMessage)
-                        }
-                        await sendChat(prompt: userMessage.text)
-
-                        //response = Message(text: globalData.lastChat, isUserMessage: true)
-                        self.messages.removeAll(where: { $0.text == "Loading..." })
-                        let responseMessage = Message(text: globalData.lastChat, isUserMessage: false)
-                        self.messages.append(responseMessage)
-                    }
-                    inputText = "" // Clear input field
+            // User message
+            let userMessage = Message(text: trimmedText, isUserMessage: true)
+            messages.append(userMessage)
+            
+            var response = ""
+            Task {
+                let loadingMessage = Message(text: "Loading...", isUserMessage: false)
+                DispatchQueue.main.async {
+                    self.messages.append(loadingMessage)
                 }
+                await sendChat(prompt: userMessage.text)
+                
+                //response = Message(text: globalData.lastChat, isUserMessage: true)
+                self.messages.removeAll(where: { $0.text == "Loading..." })
+                let responseMessage = Message(text: globalData.lastChat, isUserMessage: false)
+                self.messages.append(responseMessage)
+            }
+            inputText = "" // Clear input field
+        }
         
         
         func sendChat(prompt: String) async {
@@ -575,8 +575,8 @@ struct ContentView: View {
                 print(res)
                 //scannedName = res
                 GlobalData.shared.lastChat = res
-
-
+                
+                
                 
             } catch {
                 print("HTTP Request Failed \(error)")
@@ -677,7 +677,7 @@ struct ContentView: View {
     
     class CameraViewController: UIViewController, AVCapturePhotoCaptureDelegate {
         @ObservedObject var globalData = GlobalData.shared
-
+        
         var imageHandler: ((UIImage) -> Void)?
         private let captureSession = AVCaptureSession()
         private var capturePhotoOutput = AVCapturePhotoOutput()
@@ -762,8 +762,8 @@ struct ContentView: View {
                 print(res)
                 //scannedName = res
                 GlobalData.shared.scannedName = res
-
-
+                
+                
                 
             } catch {
                 print("HTTP Request Failed \(error)")
@@ -825,8 +825,8 @@ struct ContentView: View {
                 print(res)
                 //scannedName = res
                 GlobalData.shared.scannedName = res
-
-
+                
+                
                 
             } catch {
                 print("HTTP Request Failed \(error)")
@@ -1108,7 +1108,7 @@ struct ContentView: View {
     struct PhotoLibrarySheet: View {
         @Binding var isPresented: Bool
         @Binding var pastPhotos: [Image] // Assuming this is your array of photos
-
+        
         var body: some View {
             NavigationView {
                 List {
@@ -1131,12 +1131,12 @@ struct ContentView: View {
                 }
             }
         }
-
+        
         func deletePhoto(at offsets: IndexSet) {
             pastPhotos.remove(atOffsets: offsets) // Removes the photo at the swipe-to-delete action
         }
     }
-
+    
     
     // MARK: - Preview Provider
     struct ContentView_Previews: PreviewProvider {
